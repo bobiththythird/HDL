@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HDL Levels</title>
+<style>
+  :root { --bg:#0d1420; --card:#1a2434; --card2:#202c3f; --line:rgba(148,163,184,.18); --ink:#f1f5f9; --dim:#94a3b8; --sky:#60a5fa; --green:#4ade80; --blue:#3b82f6; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:500 16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
+  .wrap { max-width:560px; margin:0 auto; padding:20px 16px 80px; }
+  h1 { margin:10px 0 4px; font-size:34px; font-weight:800; }
+  .sub { color:var(--dim); margin:0 0 16px; }
+  .tabs { display:flex; gap:6px; margin-bottom:14px; }
+  .tab { border:1px solid var(--line); background:var(--card); color:var(--dim); padding:9px 16px; border-radius:10px; cursor:pointer; font:inherit; font-weight:600; }
+  .tab[aria-pressed="true"] { background:var(--blue); color:#fff; border-color:var(--blue); }
+  input[type=search], input[type=text] { width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); font:inherit; }
+  .cards { display:flex; flex-direction:column; gap:14px; margin-top:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px; }
+  .thumb { aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:linear-gradient(135deg,#223149,#141c2a); }
+  .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .title { margin-top:10px; font-size:20px; font-weight:800; }
+  .rank { color:var(--sky); margin-right:8px; }
+  .by { color:var(--dim); font-size:15px; margin-top:2px; }
+  .by .ver { color:var(--green); font-weight:600; }
+  .hidden { display:none !important; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-top:14px; }
+  .panel h2 { margin:0 0 10px; font-size:18px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .grid2 .full { grid-column:1/-1; }
+  label { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--dim); display:block; margin-bottom:4px; }
+  button.btn { background:var(--blue); color:#fff; border:0; padding:11px 18px; border-radius:10px; font:inherit; font-weight:700; cursor:pointer; }
+  button.btn.alt { background:var(--card2); border:1px solid var(--line); color:var(--ink); }
+  .row { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .item { display:flex; align-items:center; gap:8px; padding:8px 0; border-top:1px solid var(--line); }
+  .item:first-child { border-top:0; }
+  .item .n { flex:1; min-width:0; overflow-wrap:anywhere; }
+  .item .n small { color:var(--dim); display:block; }
+  .mini { background:var(--card2); border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:6px 10px; cursor:pointer; font:inherit; }
+  .note { color:var(--dim); font-size:13px; }
+  textarea { width:100%; min-height:120px; padding:10px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,Consolas,monospace; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>HDL</h1>
+  <p class="sub">Not everything on this list is accurate.</p>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div id="listView">
+    <input type="search" id="search" placeholder="Search levels or creators...">
+    <div class="cards" id="cards"></div>
+  </div>
+
+  <div id="adminView" class="hidden">
+    <div class="panel">
+      <h2>Add a level</h2>
+      <div class="grid2">
+        <div class="full"><label>Level name</label><input type="text" id="aName"></div>
+        <div><label>Creator</label><input type="text" id="aCreator"></div>
+        <div><label>Verifier</label><input type="text" id="aVerifier"></div>
+        <div><label>Geometry Dash level ID</label><input type="text" id="aId" inputmode="numeric"></div>
+        <div><label>Position (blank = bottom)</label><input type="text" id="aPos" inputmode="numeric"></div>
+      </div>
+      <div class="row"><button class="btn" id="addBtn">Add level</button></div>
+    </div>
+
+    <div class="panel">
+      <h2>Edit, move or remove levels</h2>
+      <div id="adminList"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Save your changes</h2>
+      <p class="note">Changes show on this device straight away. To make them live for everyone, copy the updated levels below, paste them over the LEVELS list in index.html on GitHub, and commit.</p>
+      <textarea id="export" readonly></textarea>
+      <div class="row">
+        <button class="btn" id="copyBtn">Copy levels</button>
+        <button class="btn alt" id="resetBtn">Reset to published list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== LEVELS: the only part that needs to change. =====
+   Order in the list is the rank. Each level has: name, creator, verifier, id (Geometry Dash level ID). */
+const LEVELS = [
+ {"name": "Bloodbath", "creator": "Riot", "verifier": "Goodtrist121", "id": 10565740},
+ {"name": "Tung Tung Sahurcles", "creator": "ArraegenGD", "verifier": "Goodtrist121", "id": 146066774},
+ {"name": "CONVOLVER", "creator": "GoldSource", "verifier": "Goodtrist121", "id": 129550139},
+ {"name": "Cataclysm", "creator": "Ggb0y", "verifier": "Goodtrist121", "id": 3979721},
+ {"name": "rauchkammer", "creator": "Devilmine", "verifier": "Goodtrist121", "id": 146399247},
+ {"name": "CraZy III", "creator": "DavJT", "verifier": "Goodtrist121", "id": 73725400},
+ {"name": "Achondrite", "creator": "Stormfly", "verifier": "Izzyiaaaa", "id": 43967757},
+ {"name": "Buff This", "creator": "BoyoftheCones", "verifier": "Goodtrist121", "id": 38306937},
+ {"name": "BuTiTi II", "creator": "JonathanGD", "verifier": "Goodtrist121", "id": 37259527},
+ {"name": "Future Funk II", "creator": "JonathanGD", "verifier": "Goodtrist121", "id": 59626284},
+ {"name": "HelioPOSSIBLE", "creator": "KazaGD", "verifier": "Izzyiaaaa", "id": 139861912},
+ {"name": "MikuMikuMikuMiku", "creator": "OddMod", "verifier": "Goodtrist121", "id": 82824219},
+ {"name": "Acropolis", "creator": "Zobros", "verifier": "Goodtrist121", "id": 5155022},
+ {"name": "Sonic Wave Universe", "creator": "HuyChoiGeoDat", "verifier": "Goodtrist121", "id": 112133114},
+ {"name": "if words could speak", "creator": "Avod", "verifier": "Izzyiaaaa", "id": 116870548},
+ {"name": "8o", "creator": "Zobros", "verifier": "Goodtrist121", "id": 9145341},
+ {"name": "Windy Landscape", "creator": "WOOGI1411", "verifier": "Goodtrist121", "id": 4957691},
+ {"name": "CraZy II", "creator": "DavJT", "verifier": "Goodtrist121", "id": 47620786},
+ {"name": "Magma Bound", "creator": "ScorchVx", "verifier": "Bobiththy", "id": 56568010},
+ {"name": "Stalemate", "creator": "Nox", "verifier": "Goodtrist121", "id": 4545425},
+ {"name": "Azure", "creator": "eddydo", "verifier": "Goodtrist121", "id": 123141568},
+ {"name": "Astronaut 13", "creator": "Minesap", "verifier": "Izzyiaaaa", "id": 6988264},
+ {"name": "DISCOMANIA", "creator": "nikver19", "verifier": "Izzyiaaaa", "id": 96778492},
+ {"name": "Denouement", "creator": "Synactive GD", "verifier": "Conditioner479", "id": 60619762},
+ {"name": "Tidal Line", "creator": "Sp4rce", "verifier": "Goodtrist121", "id": 104968496},
+ {"name": "Inception", "creator": "Darwin", "verifier": "Conditioner479", "id": 29862626},
+ {"name": "Future Funk", "creator": "JonathanGD", "verifier": "Bobiththy", "id": 44062068},
+ {"name": "Fairydust", "creator": "mkComic", "verifier": "Izzyiaaaa", "id": 5310094},
+ {"name": "Jawbreaker", "creator": "ZenthicAlpha", "verifier": "Izzyiaaaa", "id": 6939821},
+ {"name": "spwipi", "creator": "scrumpy", "verifier": "Conditioner479", "id": 67199678},
+ {"name": "Nine Circles", "creator": "Zobros", "verifier": "Izzyiaaaa", "id": 4284013},
+ {"name": "Two Boss Fight", "creator": "ALDTne", "verifier": "Goodtrist121", "id": 114378573},
+ {"name": "Phantoms Manor", "creator": "ViPriN", "verifier": "Izzyiaaaa", "id": 26539891},
+ {"name": "Darkness Keeper", "creator": "AbstractDark", "verifier": "Izzyiaaaa", "id": 36745142},
+ {"name": "RGB", "creator": "Sillow", "verifier": "Goodtrist121", "id": 62909889},
+ {"name": "CraZy", "creator": "DavJT", "verifier": "Goodtrist121", "id": 40945673},
+ {"name": "Troll Madness", "creator": "zyphur", "verifier": "WillWonky", "id": 114532158},
+ {"name": "Ultra violence", "creator": "Xender Game", "verifier": "Bobiththy", "id": 60887211},
+ {"name": "Bloodbath Z", "creator": "Zyzyx", "verifier": "Goodtrist121", "id": 21761387},
+ {"name": "InsanitY", "creator": "Serponge", "verifier": "Conditioner479", "id": 26727028},
+ {"name": "memories", "creator": "Xender Game", "verifier": "Izzyiaaaa", "id": 58946577},
+ {"name": "amethyst", "creator": "ZioGDVN", "verifier": "Izzyiaaaa", "id": 134645078},
+ {"name": "Artificial Powder", "creator": "DRisccuN8", "verifier": "Izzyiaaaa", "id": 109679428},
+ {"name": "HeLL", "creator": "Serponge", "verifier": "Goodtrist121", "id": 25706351},
+ {"name": "VeritY", "creator": "Serponge", "verifier": "Izzyiaaaa", "id": 18834999},
+ {"name": "Astronaut 14", "creator": "Axrus", "verifier": "Bobiththy", "id": 15237198},
+ {"name": "Sakupen Egg", "creator": "Sivlol", "verifier": "Goodtrist121", "id": 58002670},
+ {"name": "Metamorphosis", "creator": "fawksgdd", "verifier": "Izzyiaaaa", "id": 110732600},
+ {"name": "Paracosm Circles", "creator": "N1XO", "verifier": "Goodtrist121", "id": 10197026},
+ {"name": "Explorers", "creator": "MathisCreator", "verifier": "Goodtrist121", "id": 104138684},
+ {"name": "Speed of Light II", "creator": "TheRealSalad", "verifier": "Raxornado", "id": 7016598},
+ {"name": "Mountain King", "creator": "FunnyGame", "verifier": "Whatisgd1", "id": 39387387},
+ {"name": "Pulse Core", "creator": "DanielGMS", "verifier": "Izzyiaaaa", "id": 116847974},
+ {"name": "Gold Temple", "creator": "Serponge", "verifier": "Conditioner479", "id": 21337579},
+ {"name": "Skeletal Shenanigans", "creator": "YoReid", "verifier": "Dominix08", "id": 118509879},
+ {"name": "Ode to Sunset", "creator": "rustere", "verifier": "Conditioner479", "id": 117739707},
+ {"name": "Premier inn", "creator": "Woxius", "verifier": "Goodtrist121", "id": 107372046},
+ {"name": "Noel Electra", "creator": "Serponge", "verifier": "Izzyiaaaa", "id": 113409074},
+ {"name": "B", "creator": "motleyorc", "verifier": "", "id": 34085027},
+ {"name": "Take my hand", "creator": "LewinGD", "verifier": "BlakeMixx", "id": 146273838},
+ {"name": "Bloudeleuste", "creator": "MrSpaghetti", "verifier": "Goodtrist121", "id": 77428474},
+ {"name": "MaffStep", "creator": "MaFFaKa", "verifier": "Izzyiaaaa", "id": 109185557},
+ {"name": "Fast n Spicy", "creator": "spark", "verifier": "Goodtrist121", "id": 81742215},
+ {"name": "Living Open", "creator": "MaFFaKa", "verifier": "Bobiththy", "id": 96716452},
+ {"name": "potal", "creator": "Sillow", "verifier": "Whatisgd1", "id": 61417747},
+ {"name": "NODE", "creator": "robotchief", "verifier": "Goodtrist121", "id": 106696944},
+ {"name": "Black Reaper", "creator": "Anya21", "verifier": "Izzyiaaaa", "id": 84800021},
+ {"name": "Heave Ho", "creator": "Magpipe", "verifier": "Dominix08", "id": 115867730},
+ {"name": "Blackfire Backfire", "creator": "kira9999", "verifier": "WillWonky", "id": 143231051},
+ {"name": "Kickback", "creator": "Wolvyy", "verifier": "Conditioner479", "id": 145755012},
+ {"name": "Problematic", "creator": "Dhafin", "verifier": "Izzyiaaaa", "id": 7116121},
+ {"name": "wowzers holy", "creator": "lumpy", "verifier": "Goodtrist121", "id": 27912428},
+ {"name": "MAYMORY", "creator": "ItzKiba", "verifier": "Goodtrist121", "id": 80433444},
+ {"name": "entropie", "creator": "empsea", "verifier": "WillWonky", "id": 143308401},
+ {"name": "HYPERVOID", "creator": "Subwoofer", "verifier": "Raxornado", "id": 136107508},
+ {"name": "Death Moon", "creator": "Caustic", "verifier": "Goodtrist121", "id": 8660411},
+ {"name": "Change of Scene", "creator": "bli", "verifier": "Izzyiaaaa", "id": 90475473},
+ {"name": "Retro Circles", "creator": "Nacho21", "verifier": "Izzyiaaaa", "id": 14000484},
+ {"name": "White Space", "creator": "Xender Game", "verifier": "Conditioner479", "id": 77292103},
+ {"name": "TOUCH THE ORBS BUB", "creator": "AtomicRest", "verifier": "Goodtrist121", "id": 128692093},
+ {"name": "Trump Circles", "creator": "Rlol", "verifier": "Goodtrist121", "id": 26245696},
+ {"name": "NothinG", "creator": "iriswolfx", "verifier": "Goodtrist121", "id": 68061608},
+ {"name": "Uprising", "creator": "RadiationV2", "verifier": "Goodtrist121", "id": 110772842},
+ {"name": "X", "creator": "TriAxis", "verifier": "Goodtrist121", "id": 17235008},
+ {"name": "Dear Nostalgists", "creator": "TriAxis", "verifier": "WillWonky", "id": 18735780},
+ {"name": "Down Unda", "creator": "Danzmen", "verifier": "Goodtrist121", "id": 81451870},
+ {"name": "DeCode", "creator": "Rek3dge", "verifier": "Dominix08", "id": 2997354},
+ {"name": "infinite circles", "creator": "startor", "verifier": "Raxornado", "id": 13037894},
+ {"name": "Space Circles", "creator": "SUOMI", "verifier": "Goodtrist121", "id": 9864147},
+ {"name": "Ultra Paracosm", "creator": "iIiRulasiIi", "verifier": "Izzyiaaaa", "id": 11588490},
+ {"name": "Lonely Path", "creator": "SulphurXIV", "verifier": "Goodtrist121", "id": 107968410},
+ {"name": "BLACKPILL", "creator": "yyene", "verifier": "Raxornado", "id": 145216304},
+ {"name": "Speed of Light", "creator": "TheRealSalad", "verifier": "Raxornado", "id": 5098465},
+ {"name": "Speed Racer", "creator": "ZenthicAlpha", "verifier": "Goodtrist121", "id": 3543219},
+ {"name": "DeaDrop", "creator": "OvniFella", "verifier": "Goodtrist121", "id": 56764573},
+ {"name": "DJ", "creator": "Split72", "verifier": "Raxornado", "id": 131426183},
+ {"name": "Clutterfunk v2", "creator": "IIINePtunEIII", "verifier": "Goodtrist121", "id": 358750},
+ {"name": "phjork", "creator": "cerufiffy", "verifier": "Bobiththy", "id": 56587109},
+ {"name": "dorabaedifficult4", "creator": "DORABAE", "verifier": "Goodtrist121", "id": 2029133},
+ {"name": "What is it", "creator": "Booglee", "verifier": "Goodtrist121", "id": 61348317},
+ {"name": "Theory of every v2", "creator": "IIINePtunEIII", "verifier": "Goodtrist121", "id": 369294},
+ {"name": "Xstep v2", "creator": "IIINePtunEIII", "verifier": "Goodtrist121", "id": 341613},
+ {"name": "iSpyWithMyLittleEye", "creator": "Voxicat", "verifier": "Goodtrist121", "id": 89886591},
+ {"name": "Catch the Rainbow", "creator": "Atarax1a", "verifier": "Bobiththy", "id": 78063900},
+ {"name": "Square Dash", "creator": "SylntNyt", "verifier": "Goodtrist121", "id": 132698020},
+ {"name": "iS", "creator": "Grenate", "verifier": "Goodtrist121", "id": 65765662},
+ {"name": "Shiver", "creator": "SpKale", "verifier": "Goodtrist121", "id": 56210242},
+ {"name": "invisible clubstep", "creator": "J4cKy", "verifier": "Goodtrist121", "id": 1347537},
+ {"name": "Diminution", "creator": "CreatorMoldy", "verifier": "Goodtrist121", "id": 98074710},
+ {"name": "Crescendo", "creator": "MasK463", "verifier": "Goodtrist121", "id": 186646},
+ {"name": "Platinum Adventure", "creator": "Jerry4", "verifier": "Goodtrist121", "id": 5904109},
+ {"name": "MachinA DeluXXe", "creator": "sink", "verifier": "Goodtrist121", "id": 126502545},
+ {"name": "MICROPHONE", "creator": "Masterthecube5", "verifier": "Goodtrist121", "id": 141720763},
+ {"name": "THE LIGHTNING ROAD", "creator": "timeless real", "verifier": "Goodtrist121", "id": 55520},
+ {"name": "The Nightmare", "creator": "Jax", "verifier": "Goodtrist121", "id": 13519}
+];
+/* ===== end of LEVELS ===== */
+
+const KEY = "hdl-levels-v1";
+let levels = null;
+try { levels = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { levels = null; }
+if (!levels) levels = LEVELS.map(l => ({...l}));
+let admin = false;
+
+const $ = id => document.getElementById(id);
+const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(levels)); } catch (e) {} renderAll(); };
+const thumb = id => "https://levelthumbs.prevter.me/thumbnail/" + id + "/small";
+
+function renderTabs() {
+  const t = $("tabs"); t.replaceChildren();
+  [["Levels (" + levels.length + ")", false], ["Admin", true]].forEach(([text, isAdmin]) => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.textContent = text; b.setAttribute("aria-pressed", String(admin === isAdmin));
+    b.onclick = () => { admin = isAdmin; renderAll(); };
+    t.append(b);
+  });
+}
+
+function renderCards() {
+  const q = $("search").value.trim().toLowerCase();
+  const box = $("cards"); box.replaceChildren();
+  levels.forEach((l, i) => {
+    if (q && !(l.name.toLowerCase().includes(q) || l.creator.toLowerCase().includes(q) || (l.verifier || "").toLowerCase().includes(q))) return;
+    const card = document.createElement("div"); card.className = "card";
+    const th = document.createElement("div"); th.className = "thumb";
+    if (l.id) { const img = new Image(); img.loading = "lazy"; img.alt = ""; img.onerror = () => img.remove(); img.src = thumb(l.id); th.append(img); }
+    const title = document.createElement("div"); title.className = "title";
+    const r = document.createElement("span"); r.className = "rank"; r.textContent = "#" + (i + 1);
+    title.append(r, l.name);
+    const by = document.createElement("div"); by.className = "by";
+    by.append(l.creator);
+    if (l.verifier) { by.append(" \u00b7 "); const v = document.createElement("span"); v.className = "ver"; v.textContent = l.verifier; by.append(v); }
+    card.append(th, title, by); box.append(card);
+  });
+}
+
+function renderAdmin() {
+  const box = $("adminList"); box.replaceChildren();
+  levels.forEach((l, i) => {
+    const row = document.createElement("div"); row.className = "item";
+    const n = document.createElement("div"); n.className = "n";
+    n.textContent = "#" + (i + 1) + " " + l.name;
+    const s = document.createElement("small"); s.textContent = l.creator + (l.verifier ? " \u00b7 " + l.verifier : ""); n.append(s);
+    const mk = (txt, fn) => { const b = document.createElement("button"); b.className = "mini"; b.textContent = txt; b.onclick = fn; return b; };
+    row.append(n, mk("\u2191", () => move(i, -1)), mk("\u2193", () => move(i, 1)), mk("Edit", () => edit(l)),
+      mk("Remove", () => { if (confirm("Remove " + l.name + "?")) { levels.splice(i, 1); persist(); } }));
+    box.append(row);
+  });
+  $("export").value = "const LEVELS = " + JSON.stringify(levels, null, 1) + ";";
+}
+
+function move(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= levels.length) return;
+  [levels[i], levels[j]] = [levels[j], levels[i]]; persist();
+}
+
+function edit(l) {
+  const name = prompt("Level name", l.name); if (name === null) return;
+  const creator = prompt("Creator", l.creator); if (creator === null) return;
+  const verifier = prompt("Verifier", l.verifier || ""); if (verifier === null) return;
+  const id = prompt("Geometry Dash level ID", l.id || ""); if (id === null) return;
+  Object.assign(l, { name: name.trim() || l.name, creator: creator.trim(), verifier: verifier.trim(), id: parseInt(id, 10) || 0 });
+  persist();
+}
+
+$("addBtn").onclick = () => {
+  const name = $("aName").value.trim();
+  if (!name) return alert("Give the level a name.");
+  const lvl = { name, creator: $("aCreator").value.trim(), verifier: $("aVerifier").value.trim(), id: parseInt($("aId").value, 10) || 0 };
+  const pos = parseInt($("aPos").value, 10);
+  if (pos >= 1 && pos <= levels.length) levels.splice(pos - 1, 0, lvl); else levels.push(lvl);
+  ["aName", "aCreator", "aVerifier", "aId", "aPos"].forEach(i => $(i).value = "");
+  persist();
+};
+$("search").oninput = renderCards;
+$("copyBtn").onclick = async () => { try { await navigator.clipboard.writeText($("export").value); $("copyBtn").textContent = "Copied"; } catch { $("export").select(); } };
+$("resetBtn").onclick = () => { if (confirm("Throw away local changes and go back to the published list?")) { try { localStorage.removeItem(KEY); } catch (e) {} levels = LEVELS.map(l => ({...l})); renderAll(); } };
+
+function renderAll() {
+  renderTabs();
+  $("listView").classList.toggle("hidden", admin);
+  $("adminView").classList.toggle("hidden", !admin);
+  if (admin) renderAdmin(); else renderCards();
+}
+renderAll();
+</script>
+</body>
+</html>
