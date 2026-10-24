@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HDL Levels</title>
+<style>
+  :root { --bg:#0d1420; --card:#1a2434; --card2:#202c3f; --line:rgba(148,163,184,.18); --ink:#f1f5f9; --dim:#94a3b8; --sky:#60a5fa; --green:#4ade80; --blue:#3b82f6; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:500 16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
+  .wrap { max-width:560px; margin:0 auto; padding:20px 16px 80px; }
+  h1 { margin:10px 0 4px; font-size:34px; font-weight:800; }
+  .sub { color:var(--dim); margin:0 0 16px; }
+  .tabs { display:flex; gap:6px; margin-bottom:14px; }
+  .tab { border:1px solid var(--line); background:var(--card); color:var(--dim); padding:9px 16px; border-radius:10px; cursor:pointer; font:inherit; font-weight:600; }
+  .tab[aria-pressed="true"] { background:var(--blue); color:#fff; border-color:var(--blue); }
+  input[type=search], input[type=text] { width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); font:inherit; }
+  .cards { display:flex; flex-direction:column; gap:14px; margin-top:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px; }
+  .thumb { aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:linear-gradient(135deg,#223149,#141c2a); }
+  .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .title { margin-top:10px; font-size:20px; font-weight:800; }
+  .rank { color:var(--sky); margin-right:8px; }
+  .by { color:var(--dim); font-size:15px; margin-top:2px; }
+  .by .ver { color:var(--green); font-weight:600; }
+  .hidden { display:none !important; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-top:14px; }
+  .panel h2 { margin:0 0 10px; font-size:18px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .grid2 .full { grid-column:1/-1; }
+  label { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--dim); display:block; margin-bottom:4px; }
+  button.btn { background:var(--blue); color:#fff; border:0; padding:11px 18px; border-radius:10px; font:inherit; font-weight:700; cursor:pointer; }
+  button.btn.alt { background:var(--card2); border:1px solid var(--line); color:var(--ink); }
+  .row { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .item { display:flex; align-items:center; gap:8px; padding:8px 0; border-top:1px solid var(--line); }
+  .item:first-child { border-top:0; }
+  .item .n { flex:1; min-width:0; overflow-wrap:anywhere; }
+  .item .n small { color:var(--dim); display:block; }
+  .mini { background:var(--card2); border:1px solid var(--line); color:var(--ink); border-radius:8px; padding:6px 10px; cursor:pointer; font:inherit; }
+  .note { color:var(--dim); font-size:13px; }
+  textarea { width:100%; min-height:120px; padding:10px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:13px/1.4 ui-monospace,Consolas,monospace; }
+
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .chip { font-size:12px; font-weight:600; padding:3px 10px; border-radius:999px; background:rgba(148,163,184,.12); color:var(--dim); white-space:nowrap; }
+  .chip.done { background:rgba(74,222,128,.14); color:var(--green); }
+  .pts { color:var(--sky); font-weight:700; }
+  .lb { display:flex; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--line); }
+  .lb:first-child { border-top:0; }
+  .lb .pos { color:var(--sky); font-weight:800; width:34px; }
+  .lb .who { flex:1; font-weight:700; }
+  .lb .who small { display:block; color:var(--dim); font-weight:500; }
+  .lb .tot { font-weight:800; font-size:18px; }
+  .prow { display:grid; grid-template-columns:1fr 70px; gap:8px; align-items:center; margin-top:6px; }
+  .prow span { color:var(--dim); font-size:14px; }
+  .prow input { padding:8px 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>HDL</h1>
+  <p class="sub">Not everything on this list is accurate.</p>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div id="listView">
+    <input type="search" id="search" placeholder="Search levels or creators...">
+    <div class="cards" id="cards"></div>
+  </div>
+
+  <div id="playersView" class="hidden">
+    <div class="panel">
+      <h2>Leaderboard</h2>
+      <p class="note">A level is worth more the higher it ranks (250 for #1, down to 10). Under 50% earns nothing. 50% earns 10% of the level's points, rising in a straight line to 100% of the points at a full completion. Rounded down.</p>
+      <div id="board"></div>
+    </div>
+  </div>
+
+  <div id="adminView" class="hidden">
+    <div class="panel">
+      <h2>Add a level</h2>
+      <div class="grid2">
+        <div class="full"><label>Level name</label><input type="text" id="aName"></div>
+        <div><label>Creator</label><input type="text" id="aCreator"></div>
+        <div><label>Verifier</label><input type="text" id="aVerifier"></div>
+        <div><label>Geometry Dash level ID</label><input type="text" id="aId" inputmode="numeric"></div>
+        <div><label>Position (blank = bottom)</label><input type="text" id="aPos" inputmode="numeric"></div>
+      </div>
+      <div class="row"><button class="btn" id="addBtn">Add level</button></div>
+    </div>
+
+    <div class="panel">
+      <h2>Edit, move or remove levels</h2>
+      <div id="adminList"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Save your changes</h2>
+      <p class="note">Changes show on this device straight away. To make them live for everyone, copy the updated levels below, paste them over the LEVELS list in index.html on GitHub, and commit.</p>
+      <textarea id="export" readonly></textarea>
+      <div class="row">
+        <button class="btn" id="copyBtn">Copy levels</button>
+        <button class="btn alt" id="resetBtn">Reset to published list</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== LEVELS: the only part that needs to change. =====
+   Order in the list is the rank. Each level has: name, creator, verifier, id (Geometry Dash level ID). */
+const LEVELS = [
+ {"name": "Bloodbath", "creator": "Riot", "verifier": "Goodtrist121", "id": 10565740, "progress": {"Goodtrist121": 100, "Willwonky": 100, "raxornado": 9}},
+ {"name": "Tung Tung Sahurcles", "creator": "ArraegenGD", "verifier": "Goodtrist121", "id": 146066774, "progress": {"Goodtrist121": 100, "raxornado": 4}},
+ {"name": "CONVOLVER", "creator": "GoldSource", "verifier": "Goodtrist121", "id": 129550139, "progress": {"Goodtrist121": 100, "raxornado": 4}},
+ {"name": "Cataclysm", "creator": "Ggb0y", "verifier": "Goodtrist121", "id": 3979721, "progress": {"Goodtrist121": 100, "raxornado": 12}},
+ {"name": "rauchkammer", "creator": "Devilmine", "verifier": "Goodtrist121", "id": 146399247, "progress": {"Goodtrist121": 100, "Willwonky": 52, "raxornado": 7}},
+ {"name": "CraZy III", "creator": "DavJT", "verifier": "Goodtrist121", "id": 73725400, "progress": {"Goodtrist121": 100, "raxornado": 6}},
+ {"name": "Achondrite", "creator": "Stormfly", "verifier": "Izzyiaaaa", "id": 43967757, "progress": {"Goodtrist121": 18}},
+ {"name": "Buff This", "creator": "BoyoftheCones", "verifier": "Goodtrist121", "id": 38306937, "progress": {"Goodtrist121": 100}},
+ {"name": "BuTiTi II", "creator": "JonathanGD", "verifier": "Goodtrist121", "id": 37259527, "progress": {"Goodtrist121": 100, "Willwonky": 7, "raxornado": 5}},
+ {"name": "Future Funk II", "creator": "JonathanGD", "verifier": "Goodtrist121", "id": 59626284, "progress": {"Goodtrist121": 100, "Willwonky": 15, "raxornado": 10}},
+ {"name": "HelioPOSSIBLE", "creator": "KazaGD", "verifier": "Izzyiaaaa", "id": 139861912, "progress": {"Goodtrist121": 100}},
+ {"name": "MikuMikuMikuMiku", "creator": "OddMod", "verifier": "Goodtrist121", "id": 82824219, "progress": {"Goodtrist121": 100, "raxornado": 43}},
+ {"name": "Acropolis", "creator": "Zobros", "verifier": "Goodtrist121", "id": 5155022, "progress": {"Goodtrist121": 100, "raxornado": 3}},
+ {"name": "Sonic Wave Universe", "creator": "HuyChoiGeoDat", "verifier": "Goodtrist121", "id": 112133114, "progress": {"Goodtrist121": 100}},
+ {"name": "if words could speak", "creator": "Avod", "verifier": "Izzyiaaaa", "id": 116870548, "progress": {"Goodtrist121": 100}},
+ {"name": "8o", "creator": "Zobros", "verifier": "Goodtrist121", "id": 9145341, "progress": {"Goodtrist121": 100}},
+ {"name": "Windy Landscape", "creator": "WOOGI1411", "verifier": "Goodtrist121", "id": 4957691, "progress": {"Goodtrist121": 100}},
+ {"name": "CraZy II", "creator": "DavJT", "verifier": "Goodtrist121", "id": 47620786, "progress": {"Goodtrist121": 100}},
+ {"name": "Magma Bound", "creator": "ScorchVx", "verifier": "Bobiththy", "id": 56568010, "progress": {"Goodtrist121": 19, "Willwonky": 6}},
+ {"name": "Stalemate", "creator": "Nox", "verifier": "Goodtrist121", "id": 4545425, "progress": {"Goodtrist121": 100}},
+ {"name": "Azure", "creator": "eddydo", "verifier": "Goodtrist121", "id": 123141568, "progress": {"Goodtrist121": 100}},
+ {"name": "Astronaut 13", "creator": "Minesap", "verifier": "Izzyiaaaa", "id": 6988264, "progress": {"Goodtrist121": 100}},
+ {"name": "DISCOMANIA", "creator": "nikver19", "verifier": "Izzyiaaaa", "id": 96778492, "progress": {"Goodtrist121": 26}},
+ {"name": "Denouement", "creator": "Synactive GD", "verifier": "Conditioner479", "id": 60619762, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "Tidal Line", "creator": "Sp4rce", "verifier": "Goodtrist121", "id": 104968496, "progress": {"Goodtrist121": 100}},
+ {"name": "Inception", "creator": "Darwin", "verifier": "Conditioner479", "id": 29862626, "progress": {"Goodtrist121": 100}},
+ {"name": "Future Funk", "creator": "JonathanGD", "verifier": "Bobiththy", "id": 44062068, "progress": {"Goodtrist121": 100, "Willwonky": 51, "raxornado": 9}},
+ {"name": "Fairydust", "creator": "mkComic", "verifier": "Izzyiaaaa", "id": 5310094, "progress": {"Goodtrist121": 100}},
+ {"name": "Jawbreaker", "creator": "ZenthicAlpha", "verifier": "Izzyiaaaa", "id": 6939821, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "spwipi", "creator": "scrumpy", "verifier": "Conditioner479", "id": 67199678, "progress": {"Goodtrist121": 39}},
+ {"name": "Nine Circles", "creator": "Zobros", "verifier": "Izzyiaaaa", "id": 4284013, "progress": {"Goodtrist121": 100, "Willwonky": 100, "raxornado": 23}},
+ {"name": "Two Boss Fight", "creator": "ALDTne", "verifier": "Goodtrist121", "id": 114378573, "progress": {"Goodtrist121": 100}},
+ {"name": "Phantoms Manor", "creator": "ViPriN", "verifier": "Izzyiaaaa", "id": 26539891, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "Darkness Keeper", "creator": "AbstractDark", "verifier": "Izzyiaaaa", "id": 36745142, "progress": {"Goodtrist121": 18, "Willwonky": 21}},
+ {"name": "RGB", "creator": "Sillow", "verifier": "Goodtrist121", "id": 62909889, "progress": {"Goodtrist121": 100, "raxornado": 1}},
+ {"name": "CraZy", "creator": "DavJT", "verifier": "Goodtrist121", "id": 40945673, "progress": {"Goodtrist121": 100}},
+ {"name": "Troll Madness", "creator": "zyphur", "verifier": "WillWonky", "id": 114532158, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "Ultra violence", "creator": "Xender Game", "verifier": "Bobiththy", "id": 60887211, "progress": {"Goodtrist121": 15}},
+ {"name": "Bloodbath Z", "creator": "Zyzyx", "verifier": "Goodtrist121", "id": 21761387, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "InsanitY", "creator": "Serponge", "verifier": "Conditioner479", "id": 26727028, "progress": {"Goodtrist121": 28, "Willwonky": 10}},
+ {"name": "memories", "creator": "Xender Game", "verifier": "Izzyiaaaa", "id": 58946577, "progress": {"Goodtrist121": 100, "Willwonky": 5}},
+ {"name": "amethyst", "creator": "ZioGDVN", "verifier": "Izzyiaaaa", "id": 134645078, "progress": {"Goodtrist121": 100}},
+ {"name": "Artificial Powder", "creator": "DRisccuN8", "verifier": "Izzyiaaaa", "id": 109679428, "progress": {"Goodtrist121": 100}},
+ {"name": "HeLL", "creator": "Serponge", "verifier": "Goodtrist121", "id": 25706351, "progress": {"Goodtrist121": 100, "Willwonky": 24, "raxornado": 68}},
+ {"name": "VeritY", "creator": "Serponge", "verifier": "Izzyiaaaa", "id": 18834999, "progress": {"Goodtrist121": 100, "Willwonky": 31}},
+ {"name": "Astronaut 14", "creator": "Axrus", "verifier": "Bobiththy", "id": 15237198, "progress": {"Goodtrist121": 100}},
+ {"name": "Sakupen Egg", "creator": "Sivlol", "verifier": "Goodtrist121", "id": 58002670, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "Metamorphosis", "creator": "fawksgdd", "verifier": "Izzyiaaaa", "id": 110732600, "progress": {"Goodtrist121": 100}},
+ {"name": "Paracosm Circles", "creator": "N1XO", "verifier": "Goodtrist121", "id": 10197026, "progress": {"Goodtrist121": 100, "Willwonky": 100, "raxornado": 26}},
+ {"name": "Explorers", "creator": "MathisCreator", "verifier": "Goodtrist121", "id": 104138684, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "Speed of Light II", "creator": "TheRealSalad", "verifier": "Raxornado", "id": 7016598, "progress": {"Goodtrist121": 100, "raxornado": 100}},
+ {"name": "Mountain King", "creator": "FunnyGame", "verifier": "Whatisgd1", "id": 39387387, "progress": {"Goodtrist121": 100, "Willwonky": 100, "raxornado": 100}},
+ {"name": "Pulse Core", "creator": "DanielGMS", "verifier": "Izzyiaaaa", "id": 116847974, "progress": {"Goodtrist121": 29, "Willwonky": 21}},
+ {"name": "Gold Temple", "creator": "Serponge", "verifier": "Conditioner479", "id": 21337579, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "Skeletal Shenanigans", "creator": "YoReid", "verifier": "Dominix08", "id": 118509879, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "Ode to Sunset", "creator": "rustere", "verifier": "Conditioner479", "id": 117739707, "progress": {"Goodtrist121": 100}},
+ {"name": "Premier inn", "creator": "Woxius", "verifier": "Goodtrist121", "id": 107372046, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "Noel Electra", "creator": "Serponge", "verifier": "Izzyiaaaa", "id": 113409074, "progress": {"Goodtrist121": 100}},
+ {"name": "B", "creator": "motleyorc", "verifier": "", "id": 34085027, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "Take my hand", "creator": "LewinGD", "verifier": "BlakeMixx", "id": 146273838, "progress": {"Goodtrist121": 100}},
+ {"name": "Bloudeleuste", "creator": "MrSpaghetti", "verifier": "Goodtrist121", "id": 77428474, "progress": {"Goodtrist121": 100}},
+ {"name": "MaffStep", "creator": "MaFFaKa", "verifier": "Izzyiaaaa", "id": 109185557, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "Fast n Spicy", "creator": "spark", "verifier": "Goodtrist121", "id": 81742215, "progress": {"Goodtrist121": 100}},
+ {"name": "Living Open", "creator": "MaFFaKa", "verifier": "Bobiththy", "id": 96716452, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "potal", "creator": "Sillow", "verifier": "Whatisgd1", "id": 61417747, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "NODE", "creator": "robotchief", "verifier": "Goodtrist121", "id": 106696944, "progress": {"Goodtrist121": 100}},
+ {"name": "Black Reaper", "creator": "Anya21", "verifier": "Izzyiaaaa", "id": 84800021, "progress": {"Goodtrist121": 51}},
+ {"name": "Heave Ho", "creator": "Magpipe", "verifier": "Dominix08", "id": 115867730, "progress": {"Goodtrist121": 11}},
+ {"name": "Blackfire Backfire", "creator": "kira9999", "verifier": "WillWonky", "id": 143231051, "progress": {"Goodtrist121": 100, "Willwonky": 41, "raxornado": 41}},
+ {"name": "Kickback", "creator": "Wolvyy", "verifier": "Conditioner479", "id": 145755012, "progress": {"Goodtrist121": 30}},
+ {"name": "Problematic", "creator": "Dhafin", "verifier": "Izzyiaaaa", "id": 7116121, "progress": {"Goodtrist121": 100}},
+ {"name": "wowzers holy", "creator": "lumpy", "verifier": "Goodtrist121", "id": 27912428, "progress": {"Goodtrist121": 100}},
+ {"name": "MAYMORY", "creator": "ItzKiba", "verifier": "Goodtrist121", "id": 80433444, "progress": {"Goodtrist121": 100}},
+ {"name": "entropie", "creator": "empsea", "verifier": "WillWonky", "id": 143308401, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "HYPERVOID", "creator": "Subwoofer", "verifier": "Raxornado", "id": 136107508, "progress": {"Goodtrist121": 100, "raxornado": 25}},
+ {"name": "Death Moon", "creator": "Caustic", "verifier": "Goodtrist121", "id": 8660411, "progress": {"Goodtrist121": 100, "Willwonky": 19, "raxornado": 100}},
+ {"name": "Change of Scene", "creator": "bli", "verifier": "Izzyiaaaa", "id": 90475473, "progress": {"Goodtrist121": 17, "raxornado": 100}},
+ {"name": "Retro Circles", "creator": "Nacho21", "verifier": "Izzyiaaaa", "id": 14000484, "progress": {"Goodtrist121": 50, "Willwonky": 100}},
+ {"name": "White Space", "creator": "Xender Game", "verifier": "Conditioner479", "id": 77292103, "progress": {"Goodtrist121": 22, "Willwonky": 100}},
+ {"name": "TOUCH THE ORBS BUB", "creator": "AtomicRest", "verifier": "Goodtrist121", "id": 128692093, "progress": {"Goodtrist121": 100, "raxornado": 100}},
+ {"name": "Trump Circles", "creator": "Rlol", "verifier": "Goodtrist121", "id": 26245696, "progress": {"Goodtrist121": 100}},
+ {"name": "NothinG", "creator": "iriswolfx", "verifier": "Goodtrist121", "id": 68061608, "progress": {"Goodtrist121": 100}},
+ {"name": "Uprising", "creator": "RadiationV2", "verifier": "Goodtrist121", "id": 110772842, "progress": {"Goodtrist121": 100}},
+ {"name": "X", "creator": "TriAxis", "verifier": "Goodtrist121", "id": 17235008, "progress": {"Goodtrist121": 100, "raxornado": 32}},
+ {"name": "Dear Nostalgists", "creator": "TriAxis", "verifier": "WillWonky", "id": 18735780, "progress": {"Goodtrist121": 26}},
+ {"name": "Down Unda", "creator": "Danzmen", "verifier": "Goodtrist121", "id": 81451870, "progress": {"Goodtrist121": 100}},
+ {"name": "DeCode", "creator": "Rek3dge", "verifier": "Dominix08", "id": 2997354, "progress": {"Goodtrist121": 100, "raxornado": 28}},
+ {"name": "infinite circles", "creator": "startor", "verifier": "Raxornado", "id": 13037894, "progress": {"Goodtrist121": 20, "raxornado": 100}},
+ {"name": "Space Circles", "creator": "SUOMI", "verifier": "Goodtrist121", "id": 9864147, "progress": {"Goodtrist121": 100, "raxornado": 100}},
+ {"name": "Ultra Paracosm", "creator": "iIiRulasiIi", "verifier": "Izzyiaaaa", "id": 11588490, "progress": {"Goodtrist121": 100, "raxornado": 100}},
+ {"name": "Lonely Path", "creator": "SulphurXIV", "verifier": "Goodtrist121", "id": 107968410, "progress": {"Goodtrist121": 100, "raxornado": 23}},
+ {"name": "BLACKPILL", "creator": "yyene", "verifier": "Raxornado", "id": 145216304, "progress": {"Goodtrist121": 100, "raxornado": 100}},
+ {"name": "Speed of Light", "creator": "TheRealSalad", "verifier": "Raxornado", "id": 5098465, "progress": {"Goodtrist121": 100, "raxornado": 100}},
+ {"name": "Speed Racer", "creator": "ZenthicAlpha", "verifier": "Goodtrist121", "id": 3543219, "progress": {"Goodtrist121": 100, "Willwonky": 32, "raxornado": 43}},
+ {"name": "DeaDrop", "creator": "OvniFella", "verifier": "Goodtrist121", "id": 56764573, "progress": {"Goodtrist121": 100, "raxornado": 3}},
+ {"name": "DJ", "creator": "Split72", "verifier": "Raxornado", "id": 131426183, "progress": {"Goodtrist121": 40, "raxornado": 100}},
+ {"name": "Clutterfunk v2", "creator": "IIINePtunEIII", "verifier": "Goodtrist121", "id": 358750, "progress": {"Goodtrist121": 100}},
+ {"name": "phjork", "creator": "cerufiffy", "verifier": "Bobiththy", "id": 56587109, "progress": {"Goodtrist121": 100, "Willwonky": 100, "raxornado": 31}},
+ {"name": "dorabaedifficult4", "creator": "DORABAE", "verifier": "Goodtrist121", "id": 2029133, "progress": {"Goodtrist121": 100, "raxornado": 3}},
+ {"name": "What is it", "creator": "Booglee", "verifier": "Goodtrist121", "id": 61348317, "progress": {"Goodtrist121": 100, "raxornado": 31}},
+ {"name": "Theory of every v2", "creator": "IIINePtunEIII", "verifier": "Goodtrist121", "id": 369294, "progress": {"Goodtrist121": 100, "raxornado": 7}},
+ {"name": "Xstep v2", "creator": "IIINePtunEIII", "verifier": "Goodtrist121", "id": 341613, "progress": {"Goodtrist121": 100, "Willwonky": 100, "raxornado": 38}},
+ {"name": "iSpyWithMyLittleEye", "creator": "Voxicat", "verifier": "Goodtrist121", "id": 89886591, "progress": {"Goodtrist121": 100, "Willwonky": 100, "raxornado": 100}},
+ {"name": "Catch the Rainbow", "creator": "Atarax1a", "verifier": "Bobiththy", "id": 78063900, "progress": {"Goodtrist121": 17}},
+ {"name": "Square Dash", "creator": "SylntNyt", "verifier": "Goodtrist121", "id": 132698020, "progress": {"Goodtrist121": 100, "raxornado": 34}},
+ {"name": "iS", "creator": "Grenate", "verifier": "Goodtrist121", "id": 65765662, "progress": {"Goodtrist121": 100, "Willwonky": 100, "raxornado": 26}},
+ {"name": "Shiver", "creator": "SpKale", "verifier": "Goodtrist121", "id": 56210242, "progress": {"Goodtrist121": 100, "Willwonky": 100, "raxornado": 51}},
+ {"name": "invisible clubstep", "creator": "J4cKy", "verifier": "Goodtrist121", "id": 1347537, "progress": {"Goodtrist121": 100, "Willwonky": 100, "raxornado": 31}},
+ {"name": "Diminution", "creator": "CreatorMoldy", "verifier": "Goodtrist121", "id": 98074710, "progress": {"Goodtrist121": 100}},
+ {"name": "Crescendo", "creator": "MasK463", "verifier": "Goodtrist121", "id": 186646, "progress": {"Goodtrist121": 100, "raxornado": 8}},
+ {"name": "Platinum Adventure", "creator": "Jerry4", "verifier": "Goodtrist121", "id": 5904109, "progress": {"Goodtrist121": 100, "Willwonky": 100, "raxornado": 38}},
+ {"name": "MachinA DeluXXe", "creator": "sink", "verifier": "Goodtrist121", "id": 126502545, "progress": {"Goodtrist121": 100}},
+ {"name": "MICROPHONE", "creator": "Masterthecube5", "verifier": "Goodtrist121", "id": 141720763, "progress": {"Goodtrist121": 100, "Willwonky": 58, "raxornado": 35}},
+ {"name": "THE LIGHTNING ROAD", "creator": "timeless real", "verifier": "Goodtrist121", "id": 55520, "progress": {"Goodtrist121": 100, "Willwonky": 100}},
+ {"name": "The Nightmare", "creator": "Jax", "verifier": "Goodtrist121", "id": 13519, "progress": {"Goodtrist121": 100, "Willwonky": 100, "raxornado": 100}}
+];
+/* ===== end of LEVELS ===== */
+
+const KEY = "hdl-levels-v2";
+let levels = null;
+try { levels = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { levels = null; }
+if (!levels) levels = LEVELS.map(l => ({...l}));
+let view = "levels";
+const MIN = 50; // minimum percent that counts
+const PLAYERS = ["Goodtrist121", "raxornado", "Willwonky"];
+
+const $ = id => document.getElementById(id);
+const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(levels)); } catch (e) {} renderAll(); };
+const thumb = id => "https://levelthumbs.prevter.me/thumbnail/" + id + "/small";
+
+
+/* Points a level is worth, by rank. 250 for #1 down to 10 for the last level. */
+const levelPoints = (rank, count) => Math.round(10 + 240 * Math.pow(1 - (rank - 1) / count, 2));
+/* Share of the level's points a player earns: 0 under MIN%, 10% at 50%, sliding in a straight line to 100% at 100%. Rounded down. */
+const earned = (rank, count, pct) => {
+  if (!pct || pct < MIN) return 0;
+  const share = 0.1 + 0.9 * (pct - MIN) / (100 - MIN);
+  return Math.floor(levelPoints(rank, count) * Math.min(1, share));
+};
+const standings = () => {
+  const t = {};
+  PLAYERS.forEach(p => t[p] = { name: p, points: 0, beaten: 0, partial: 0 });
+  levels.forEach((l, i) => {
+    Object.entries(l.progress || {}).forEach(([p, pct]) => {
+      if (!t[p]) t[p] = { name: p, points: 0, beaten: 0, partial: 0 };
+      const e = earned(i + 1, levels.length, pct);
+      t[p].points += e;
+      if (pct >= 100) t[p].beaten++; else if (pct >= MIN) t[p].partial++;
+    });
+  });
+  return Object.values(t).sort((a, b) => b.points - a.points || b.beaten - a.beaten || a.name.localeCompare(b.name));
+};
+
+function renderTabs() {
+  const t = $("tabs"); t.replaceChildren();
+  [["Levels (" + levels.length + ")", "levels"], ["Players", "players"], ["Admin", "admin"]].forEach(([text, key]) => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.textContent = text; b.setAttribute("aria-pressed", String(view === key));
+    b.onclick = () => { view = key; renderAll(); };
+    t.append(b);
+  });
+}
+
+function renderCards() {
+  const q = $("search").value.trim().toLowerCase();
+  const box = $("cards"); box.replaceChildren();
+  levels.forEach((l, i) => {
+    if (q && !(l.name.toLowerCase().includes(q) || l.creator.toLowerCase().includes(q) || (l.verifier || "").toLowerCase().includes(q))) return;
+    const card = document.createElement("div"); card.className = "card";
+    const th = document.createElement("div"); th.className = "thumb";
+    if (l.id) { const img = new Image(); img.loading = "lazy"; img.alt = ""; img.onerror = () => img.remove(); img.src = thumb(l.id); th.append(img); }
+    const title = document.createElement("div"); title.className = "title";
+    const r = document.createElement("span"); r.className = "rank"; r.textContent = "#" + (i + 1);
+    title.append(r, l.name);
+    const by = document.createElement("div"); by.className = "by";
+    by.append(l.creator);
+    if (l.verifier) { by.append(" \u00b7 "); const v = document.createElement("span"); v.className = "ver"; v.textContent = l.verifier; by.append(v); }
+    by.append(" \u00b7 "); const pt = document.createElement("span"); pt.className = "pts"; pt.textContent = levelPoints(i + 1, levels.length) + " points"; by.append(pt);
+    card.append(th, title, by);
+    const recs = Object.entries(l.progress || {}).filter(([, pct]) => pct >= MIN).sort((a, b) => b[1] - a[1]);
+    if (recs.length) {
+      const chips = document.createElement("div"); chips.className = "chips";
+      recs.forEach(([p, pct]) => { const c = document.createElement("span"); c.className = pct >= 100 ? "chip done" : "chip"; c.textContent = p + " " + pct + "%"; chips.append(c); });
+      card.append(chips);
+    }
+    box.append(card);
+  });
+}
+
+
+function renderPlayers() {
+  const box = $("board"); box.replaceChildren();
+  standings().forEach((s, i) => {
+    const row = document.createElement("div"); row.className = "lb";
+    const pos = document.createElement("div"); pos.className = "pos"; pos.textContent = "#" + (i + 1);
+    const who = document.createElement("div"); who.className = "who"; who.textContent = s.name;
+    const sm = document.createElement("small"); sm.textContent = s.beaten + " beaten" + (s.partial ? " \u00b7 " + s.partial + " in progress (50%+)" : ""); who.append(sm);
+    const tot = document.createElement("div"); tot.className = "tot"; tot.textContent = s.points.toLocaleString();
+    row.append(pos, who, tot); box.append(row);
+  });
+}
+
+function renderAdmin() {
+  const box = $("adminList"); box.replaceChildren();
+  levels.forEach((l, i) => {
+    const row = document.createElement("div"); row.className = "item";
+    const n = document.createElement("div"); n.className = "n";
+    n.textContent = "#" + (i + 1) + " " + l.name;
+    const s = document.createElement("small"); s.textContent = l.creator + (l.verifier ? " \u00b7 " + l.verifier : ""); n.append(s);
+    const mk = (txt, fn) => { const b = document.createElement("button"); b.className = "mini"; b.textContent = txt; b.onclick = fn; return b; };
+    row.append(n, mk("\u2191", () => move(i, -1)), mk("\u2193", () => move(i, 1)), mk("Edit", () => edit(l)), mk("Progress", () => editProgress(l)),
+      mk("Remove", () => { if (confirm("Remove " + l.name + "?")) { levels.splice(i, 1); persist(); } }));
+    box.append(row);
+  });
+  $("export").value = "const LEVELS = " + JSON.stringify(levels, null, 1) + ";";
+}
+
+
+function editProgress(l) {
+  l.progress = l.progress || {};
+  for (const p of PLAYERS) {
+    const cur = l.progress[p] || 0;
+    const v = prompt(p + " progress on " + l.name + " (0-100, blank or 0 for none)", cur || "");
+    if (v === null) return;
+    const n = parseInt(v, 10);
+    if (n > 0) l.progress[p] = Math.min(100, n); else delete l.progress[p];
+  }
+  persist();
+}
+
+function move(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= levels.length) return;
+  [levels[i], levels[j]] = [levels[j], levels[i]]; persist();
+}
+
+function edit(l) {
+  const name = prompt("Level name", l.name); if (name === null) return;
+  const creator = prompt("Creator", l.creator); if (creator === null) return;
+  const verifier = prompt("Verifier", l.verifier || ""); if (verifier === null) return;
+  const id = prompt("Geometry Dash level ID", l.id || ""); if (id === null) return;
+  Object.assign(l, { name: name.trim() || l.name, creator: creator.trim(), verifier: verifier.trim(), id: parseInt(id, 10) || 0 });
+  persist();
+}
+
+$("addBtn").onclick = () => {
+  const name = $("aName").value.trim();
+  if (!name) return alert("Give the level a name.");
+  const lvl = { name, creator: $("aCreator").value.trim(), verifier: $("aVerifier").value.trim(), id: parseInt($("aId").value, 10) || 0, progress: {} };
+  const pos = parseInt($("aPos").value, 10);
+  if (pos >= 1 && pos <= levels.length) levels.splice(pos - 1, 0, lvl); else levels.push(lvl);
+  ["aName", "aCreator", "aVerifier", "aId", "aPos"].forEach(i => $(i).value = "");
+  persist();
+};
+$("search").oninput = renderCards;
+$("copyBtn").onclick = async () => { try { await navigator.clipboard.writeText($("export").value); $("copyBtn").textContent = "Copied"; } catch { $("export").select(); } };
+$("resetBtn").onclick = () => { if (confirm("Throw away local changes and go back to the published list?")) { try { localStorage.removeItem(KEY); } catch (e) {} levels = LEVELS.map(l => ({...l})); renderAll(); } };
+
+function renderAll() {
+  renderTabs();
+  $("listView").classList.toggle("hidden", view !== "levels");
+  $("playersView").classList.toggle("hidden", view !== "players");
+  $("adminView").classList.toggle("hidden", view !== "admin");
+  if (view === "admin") renderAdmin(); else if (view === "players") renderPlayers(); else renderCards();
+}
+renderAll();
+</script>
+</body>
+</html>
